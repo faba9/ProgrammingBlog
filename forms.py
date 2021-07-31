@@ -3,6 +3,7 @@ from wtforms import (StringField, PasswordField,
  ValidationError, SubmitField, TextAreaField, IntegerField)
 from wtforms.validators import DataRequired, Length, Email
 
+# create forms using flask_wtf
 class Myform(FlaskForm):
     password = PasswordField(label='Password',
      validators=[DataRequired(), Length(min=5)])
