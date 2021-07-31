@@ -1,22 +1,21 @@
+# import libraries
 from flask import Flask, session, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3 as sql
 from forms import *
 import datetime
+# -----------------
 
+# create flask app
 app = Flask(__name__)
 app.config.from_object('config')
 
+# connect sqlite database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///E:\\my_file\\Projectes\\flaskBlog\\blog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# ------------------
-# Admin Account
-admin_email = 'admin@gmail.com'
-admin_password = 'admin1234'
-# ------------------
-
+# create user table in blog.db to assign users in it
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
@@ -24,16 +23,16 @@ class User(db.Model):
     password = db.Column(db.String(255), nullable=False)
     posts = db.relationship('Post', backref='user')
 
-    def __init__(self, name, email, password, admin=False):
+    def __init__(self, name, email, password):
         self.name = name
         self.email = email
         self.password = password
-        self.admin = admin
 
     def to_json(self):
         dict = {k:v for k,v in self.__dict__.items() if k != '_sa_instance_state'}
         return dict
-
+    
+# create post table in blog.db to contain all posts
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.Text(1500), nullable=False)
@@ -42,7 +41,7 @@ class Post(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'),
         nullable=False)
     
-
+# create the login page
 @app.route('/login', methods=['POST', 'GET'])
 def login(): # an exisiting user
     form = Myform()
@@ -67,10 +66,9 @@ def login(): # an exisiting user
                     message = 'password is not correct!'
             else:
                 message = 'email not registered!'
-                # sleep(5)
-                # return redirect(url_for('login'))
     return render_template('login.html', form=form, message=message)
 
+# create the main page that will show all posts that have been published
 @app.route('/')
 def index():
     name, message = '', ''
@@ -123,7 +121,7 @@ def posts(userid):
         message = 'You have not sent any post yet!'
     return render_template('posts.html', posts=all_post, message=message)
 
-
+# create dashboard to enable the user to publish and delete posts
 @app.route('/dash', methods=['POST', 'GET'])
 def dashboard():
     current_user = session.get('logged_in', False)
@@ -136,6 +134,7 @@ def dashboard():
         meassage = 'Login First Please!'
         return redirect(url_for('login', meassage=meassage))
 
+# create add post page to add new posts
 @app.route('/addpost', methods=['POST', 'GET'])
 def addPost():
     form = Addform()
@@ -158,6 +157,7 @@ def addPost():
                 message = 'User not found!'
     return render_template('add.html', message=message, form=form)
 
+# create delete post page to delete posts
 @app.route('/delpost<int:postid>', methods=['POST', 'GET', 'DELETE'])
 def deletePost(postid):
     # form = Delform()
@@ -179,7 +179,7 @@ def deletePost(postid):
         message = 'Something went wrong!'
     return render_template('del.html', message=message)
 
-
+# create logout page to pop the user from session
 @app.route('/logout')
 def logout():
     current_user = session.get('logged_in', False)
@@ -187,6 +187,7 @@ def logout():
         session.pop('logged_in', None)
     return redirect(url_for('index'))
 
+# create register page to assign new user to database
 @app.route('/register', methods=['POST', 'GET'])
 def register(): # add new user to database
     message = ''
